@@ -6,7 +6,6 @@
 import math
 from . import tmc
 from . import tmc2130
-from configfile import PrinterConfig
 
 TMC_FREQUENCY = 12000000.0
 
