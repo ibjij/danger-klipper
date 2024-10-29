@@ -264,6 +264,7 @@ Available "action" commands:
 - `action_respond_info(msg)`: Write the given `msg` to the
   /tmp/printer pseudo-terminal. Each line of `msg` will be sent with a
   "// " prefix.
+- `action_log(msg)`: Write the given msg to the klippy.log
 - `action_raise_error(msg)`: Abort the current macro (and any calling
   macros) and write the given `msg` to the /tmp/printer
   pseudo-terminal. The first line of `msg` will be sent with a "!! "
@@ -385,6 +386,18 @@ The following actions are available in menu templates:
   boolean parameter `<force>` default value False.
   * When `<force>` is set True then it will also stop editing. Default
     value is False.
+
+### Menu Dialogs
+
+When a menu dialog is used, and additional read-only attribute is
+availabe in templates.
+* `dialog` - a dictionary of values. Keys are the element `id`, the
+  last portion of it's identifier. Disabled elements have a `None`
+  value, otherwise the `input` template is used as a default.
+
+`[menu __main __setup __tuning __hotend_mpc_dialog]` in the
+[default set of menus](../klippy/extras/display/menu.cfg) can be used
+as reference for how to build more complex dialogs.
 
 ## Save Variables to disk
 

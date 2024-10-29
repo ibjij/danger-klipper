@@ -59,7 +59,7 @@ serial:
 #   reset itself. The default is 'arduino' if the micro-controller
 #   communicates over a serial port, 'command' otherwise.
 #is_non_critical: False
-#   Setting this to True will allow the mcu to be disconnected and 
+#   Setting this to True will allow the mcu to be disconnected and
 #   reconnected at will without errors. Helpful for USB-accelerometer boards
 #   and USB-probes
 ```
@@ -111,8 +111,16 @@ A collection of DangerKlipper-specific system options
 #   This allows to set extra flush time (in seconds). Under certain conditions,
 #   a low value will result in an error if message is not get flushed, a high value
 #   (0.250) will result in homing/probing latency. The default is 0.250
+#homing_start_delay: 0.001
+#   How long to dwell before beginning a drip move for homing
+#endstop_sample_time: 0.000015
+#   How often the MCU should sample the endstop state
+#endstop_sample_count: 4
+#   How many times we should check the endstop state when homing
+#   Unless your endstop is noisy and unreliable, you should be able to lower this to 1
 
-# Logging options
+
+# Logging options:
 
 #minimal_logging: False
 #   Set all log parameters log options to False. The default is False.
@@ -1383,12 +1391,12 @@ extended [G-Code command](G-Codes.md#z_tilt) becomes available.
 #   The height (in mm) that the head should be commanded to move to
 #   just prior to starting a probe operation. The default is 5.
 #min_horizontal_move_z: 1.0
-#   minimum value for horizontal move z 
+#   minimum value for horizontal move z
 #   (only used when adaptive_horizontal_move_z is True)
 #adaptive_horizontal_move_z: False
 #   if we should adjust horizontal move z after the first adjustment round,
 #   based on error.
-#   when set to True, initial horizontal_move_z is the config value, 
+#   when set to True, initial horizontal_move_z is the config value,
 #   subsequent iterations will set horizontal_move_z to
 #   the ceil of error, or min_horizontal_move_z - whichever is greater.
 #retries: 0
@@ -1506,12 +1514,12 @@ Where x is the 0, 0 point on the bed
 #   The height (in mm) that the head should be commanded to move to
 #   just prior to starting a probe operation. The default is 5.
 #min_horizontal_move_z: 1.0
-#   minimum value for horizontal move z 
+#   minimum value for horizontal move z
 #   (only used when adaptive_horizontal_move_z is True)
 #adaptive_horizontal_move_z: False
 #   if we should adjust horizontal move z after the first adjustment round,
 #   based on error.
-#   when set to True, initial horizontal_move_z is the config value, 
+#   when set to True, initial horizontal_move_z is the config value,
 #   subsequent iterations will set horizontal_move_z to
 #   the ceil of error, or min_horizontal_move_z - whichever is greater.
 #max_adjust: 4
@@ -1609,6 +1617,8 @@ home_xy_position:
 #move_to_previous: False
 #   When set to True, the X and Y axes are reset to their previous
 #   positions after Z axis homing. The default is False.
+#home_y_before_x: False
+#  # If True, the Y axis will home first. The default is False.
 ```
 
 ### [homing_override]
@@ -4964,7 +4974,7 @@ thus they do not support the "menu" options or button configuration.
 # See the "display" section for available parameters.
 ```
 
-### [menu]
+### ⚠️ [menu]
 
 Customizable lcd display menus.
 
@@ -4986,15 +4996,21 @@ information on menu attributes available during template rendering.
 #[menu some_name]
 #type:
 #   One of command, input, list, text:
-#       command - basic menu element with various script triggers
-#       input   - same like 'command' but has value changing capabilities.
-#                 Press will start/stop edit mode.
-#       list    - it allows for menu items to be grouped together in a
-#                 scrollable list.  Add to the list by creating menu
-#                 configurations using "some_list" as a prefix - for
-#                 example: [menu some_list some_item_in_the_list]
-#       vsdlist - same as 'list' but will append files from virtual sdcard
-#                 (will be removed in the future)
+#       command      - basic menu element with various script triggers
+#       input        - same like 'command' but has value changing capabilities.
+#                      Press will start/stop edit mode.
+#       list         - it allows for menu items to be grouped together in a
+#                      scrollable list.  Add to the list by creating menu
+#                      configurations using "some_list" as a prefix - for
+#                      example: [menu some_list some_item_in_the_list]
+#       vsdlist      - same as 'list' but will append files from virtual sdcard
+#                      (deprecated, will be removed in the future)
+#    ⚠️ file_browser - Extended SD Card browser, supporting directories and
+#                      sorting. (replaces vsdlist)
+#    ⚠️ dialog       - Menu Dialogs, a list of inputs with a final choice to
+#                      confirm or cancel. Used for more complex scenarios like
+#                      PID/MPC calibration where you may want to set multiple
+#                      values for a single command
 #name:
 #   Name of menu item - evaluated as a template.
 #enable:
@@ -5006,6 +5022,14 @@ information on menu attributes available during template rendering.
 #[menu some_list]
 #type: list
 #name:
+#enable:
+#   See above for a description of these parameters.
+
+#[menu sdcard]
+#type: file_browser
+#name:
+#sort_by:
+#   `last_modified` (default) or `name`
 #enable:
 #   See above for a description of these parameters.
 
@@ -5042,6 +5066,22 @@ information on menu attributes available during template rendering.
 #   Script to run on button click, long click or value change.
 #   Evaluated as a template. The button click will trigger the edit
 #   mode start or end.
+
+#[menu neopixel]
+#type: dialog
+#name:
+#enable:
+#   See above for a description of these parameters.
+#title:
+#   An optional title to display at the top of the dialog. `name` will
+#   used if not set
+#confirm_text:
+#cancel_text
+#   Templates for the confirmation and cancel options
+#gcode:
+#   G-Code to run on confirmation. The dialog will be closed on
+#   confirmation. `{menu.exit()}` may be used to close the menu
+#   instead.
 ```
 
 ## Filament sensors
@@ -5203,10 +5243,14 @@ adc2:
 #   Use the current diameter instead of the nominal diameter while
 #   the measurement delay has not run through.
 #pause_on_runout:
+#immediate_runout_gcode:
 #runout_gcode:
 #insert_gcode:
 #event_delay:
 #pause_delay:
+#smart:
+#always_fire_events:
+#check_on_print_start:
 #   See the "filament_switch_sensor" section for a description of the
 #   above parameters.
 ```
@@ -5248,6 +5292,93 @@ sensor_pin:
 #   response to detecting an extrusion direction change. The default
 #   is 0.
 ```
+## Load Cells
+### [load_cell]
+Load Cell. Uses an ADC sensor attached to a load cell to create a digital
+scale.
+```
+[load_cell]
+sensor_type:
+#   This must be one of the supported sensor types, see below.
+```
+
+#### HX711
+This is a 24 bit low sample rate chip using "bit-bang" communications. It is
+suitable for filament scales.
+```
+[load_cell]
+sensor_type: hx711
+sclk_pin:
+#   The pin connected to the HX711 clock line. This parameter must be provided.
+dout_pin:
+#   The pin connected to the HX711 data output line. This parameter must be
+#   provided.
+#gain: A-128
+#   Valid values for gain are: A-128, A-64, B-32. The default is A-128.
+#   'A' denotes the input channel and the number denotes the gain. Only the 3
+#   listed combinations are supported by the chip. Note that changing the gain
+#   setting also selects the channel being read.
+#sample_rate: 80
+#   Valid values for sample_rate are 80 or 10. The default value is 80.
+#   This must match the wiring of the chip. The sample rate cannot be changed
+#   in software.
+```
+
+#### HX717
+This is the 4x higher sample rate version of the HX711, suitable for probing.
+```
+[load_cell]
+sensor_type: hx717
+sclk_pin:
+#   The pin connected to the HX717 clock line. This parameter must be provided.
+dout_pin:
+#   The pin connected to the HX717 data output line. This parameter must be
+#   provided.
+#gain: A-128
+#   Valid values for gain are A-128, B-64, A-64, B-8.
+#   'A' denotes the input channel and the number denotes the gain setting.
+#   Only the 4 listed combinations are supported by the chip. Note that
+#   changing the gain setting also selects the channel being read.
+#sample_rate: 320
+#   Valid values for sample_rate are: 10, 20, 80, 320. The default is 320.
+#   This must match the wiring of the chip. The sample rate cannot be changed
+#   in software.
+```
+
+#### ADS1220
+The ADS1220 is a 24 bit ADC supporting up to a 2Khz sample rate configurable in
+software.
+```
+[load_cell]
+sensor_type: ads1220
+cs_pin:
+#   The pin connected to the ADS1220 chip select line. This parameter must
+#   be provided.
+#spi_speed: 512000
+#   This chip supports 2 speeds: 256000 or 512000. The faster speed is only
+#   enabled when one of the Turbo sample rates is used. The correct spi_speed
+#   is selected based on the sample rate.
+#spi_bus:
+#spi_software_sclk_pin:
+#spi_software_mosi_pin:
+#spi_software_miso_pin:
+#   See the "common SPI settings" section for a description of the
+#   above parameters.
+data_ready_pin:
+#   Pin connected to the ADS1220 data ready line. This parameter must be
+#   provided.
+#gain: 128
+#   Valid gain values are 128, 64, 32, 16, 8, 4, 2, 1
+#   The default is 128
+#sample_rate: 660
+#   This chip supports two ranges of sample rates, Normal and Turbo. In turbo
+#   mode the chips c internal clock runs twice as fast and the SPI communication
+#   speed is also doubled.
+#   Normal sample rates: 20, 45, 90, 175, 330, 600, 1000
+#   Turbo sample rates: 40, 90, 180, 350, 660, 1200, 2000
+#   The default is 660
+```
+
 
 ## Board specific hardware support
 
@@ -5743,8 +5874,9 @@ Most Klipper micro-controller implementations only support an
 micro-controller supports a 400000 speed (_fast mode_, 400kbit/s), but it must be
 [set in the operating system](RPi_microcontroller.md#optional-enabling-i2c)
 and the `i2c_speed` parameter is otherwise ignored. The Klipper
-"RP2040" micro-controller and ATmega AVR family support a rate of 400000
-via the `i2c_speed` parameter. All other Klipper micro-controllers use a
+"RP2040" micro-controller and ATmega AVR family and some STM32
+(F0, G0, G4, L4, F7, H7) support a rate of 400000 via the `i2c_speed` parameter.
+All other Klipper micro-controllers use a
 100000 rate and ignore the `i2c_speed` parameter.
 
 ```
